@@ -1,5 +1,11 @@
 import { Hono } from "hono";
 import { Context } from "hono";
+import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
+import dotenv from 'dotenv'
+dotenv.configDotenv()
+
 
 const app = new Hono();
 
@@ -42,5 +48,28 @@ app.post("/", authMiddleware, async (c) => {
   }
  
 });
+app.get("/user", async(c : Context)=>{
+  const pool = new Pool({ connectionString: c.env.DATABASE_URL })
+  const adapter = new PrismaPg(pool)
+  const prisma = new PrismaClient({ adapter })
+  const users = await prisma.user.findMany()
+  return c.json(users);
+})
+
+app.post("/user", async(c : Context)=>{
+  const pool = new Pool({ connectionString: c.env.DATABASE_URL })
+  const adapter = new PrismaPg(pool)
+  const prisma = new PrismaClient({ adapter })
+  const body =  await c.req.json();
+  console.log(body)
+  const users = await prisma.user.create({
+    data : {
+      email : body.email,
+
+    }
+  })
+  const result = JSON.stringify(users)
+  return c.json(users);
+})
 
 export default app;
